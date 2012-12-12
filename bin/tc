@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+$:.unshift File.expand_path '../lib', File.dirname(__FILE__)
+require 'rubygems'
+require 'tremachat'
+require 'tremachat/app'
+$stdout.sync = true
+
+app = Tremachat::App.new
+app.run ARGV
