@@ -13,14 +13,17 @@ module Tremachat
       else
         @socket = Socket.open(PF_PACKET, SOCK_DGRAM, ETH_P_IP)
       end
+      # off ip_header on userland
+      @socket.setsockopt(IPPROTO_IP, IP_HDRINCL, 0)
     end
 
     def recv
-      buff = @socket.read(8192)
+      buff, ip_saddr = @socket.recvfrom(8041, MSG_WAITALL)
+      puts buff, ip_saddr
     end
 
     def send(message)
-      @socket.send(message)
+      @socket.send(message, 0, '127.0.0.1')
     end
   end
 end
