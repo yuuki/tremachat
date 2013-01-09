@@ -12,7 +12,7 @@ class IPHeader
   attr_accessor :ip_dst
   attr_accessor :payload
 
-  def initialize(packet=nil, index=nil)
+  def initialize(packet=nil, index=0)
     if packet and index
       @version = (packet[index] >> 4) & 0xF
       @ip_hl = packet[index] & 0xF
@@ -33,6 +33,18 @@ class IPHeader
     return sprintf("%d.%d.%d.%d", packet[index], packet[index + 1], packet[index + 2], packet[index + 3])
   end
 
-  def to_buf
+  def dump
+    p self.version
+    p self.ip_hl
+    p @ip_tos
+    p self.ip_len
+    p self.ip_id
+    p self.ip_off
+    p self.ip_ttl
+    p self.ip_p
+    p self.ip_sum
+    p self.ip_src
+    p self.ip_dst
+    p self.payload
   end
 end
