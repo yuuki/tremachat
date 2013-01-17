@@ -11,7 +11,7 @@ module Tremachat
     def initialize
       @socket = Socket.open(AF_INET, SOCK_RAW, TC_PROTOCOL)
 
-      # off ip_header on userland
+      # off ip_header on userland when seding
       @socket.setsockopt(IPPROTO_IP, IP_HDRINCL, 0)
     end
 
@@ -22,8 +22,8 @@ module Tremachat
       return ip.payload
     end
 
-    def send(message)
-      sockaddr = Socket.sockaddr_in("discard", "localhost")
+    def send(message, dst_addr=nil)
+      sockaddr = Socket.sockaddr_in("discard", dst_addr || "192.168.200.200")
       @socket.send(message, 0, sockaddr)
     end
   end

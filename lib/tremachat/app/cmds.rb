@@ -9,6 +9,7 @@ module Tremachat
       def regist_cmds
         cmd :timeline do |v, opts|
           Render.puts "Now Wating..."
+          client.send "0:"
           while true
             message = client.recv
             Render.puts message

@@ -46,7 +46,7 @@ module Tremachat
         message = @parser.argv.join(' ')
         Render.puts(message)
         begin
-          client.send message
+          client.send message, "127.0.0.1"
         rescue => e
           STDERR.puts e.message
         end
