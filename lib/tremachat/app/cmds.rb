@@ -8,8 +8,9 @@ module Tremachat
       private
       def regist_cmds
         cmd :timeline do |v, opts|
+          client.send("STATE:OPEN\n")
+          client.bind
           Render.puts "Now Wating..."
-          client.send "0:"
           while true
             message = client.recv
             Render.puts message
