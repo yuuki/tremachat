@@ -7,7 +7,7 @@ module TCHelper
     class << packetin
       TC_PORT = 20000
 
-      attr_reader :tc_body, :tc_state, :tc_switchno, :tc_segment
+      attr_reader :tc_body, :tc_state, :tc_switchno, :tc_segment, :tc_username
 
       def tc_packet?
         if self.udp? and self.udp_dst_port == TC_PORT
@@ -21,6 +21,7 @@ module TCHelper
       # STATE:BPDY
       # STATE:CLOSE
       # ROOMNO: datapath_id
+      # USERNAME: unix username
       def tc_openstate?
         self.tc_state == :OPEN
       end
@@ -33,7 +34,7 @@ module TCHelper
         self.tc_state == :CLOSE
       end
 
-      def message_dump
+      def dump
         puts "macsa: #{self.macsa}"
         puts "macda:  #{self.macda}"
         puts "in_port: #{self.in_port}"
@@ -56,14 +57,15 @@ module TCHelper
       private
 
       def parse_header
-        puts self.udp_payload
         self.udp_payload =~ /^STATE:(OPEN|BODY|CLOSE)$/
         raise "Header with no STATE field" unless $1
         @tc_state = $1.to_sym
-        puts @tc_state
 
         self.udp_payload =~ /^ROOMNO:(\d+)^/
         @tc_switchno = $1.to_i if $1
+
+        self.udp_payload =~ /^USERNAME:(\w+)^/
+        @tc_username = $1.to_s if $1
       end
     end
 
