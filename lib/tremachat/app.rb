@@ -47,7 +47,8 @@ module Tremachat
         message = @parser.argv.join(' ')
         Render.puts(message)
         begin
-          client.send "STATE:BODY\n\n"+message, nil, @parser[:dport]
+          client.send_with_open
+          client.send_with_body message
         rescue => e
           STDERR.puts e.message
         end

@@ -19,32 +19,39 @@ class TCController < Controller
 
     @fdb.learn(message.macsa, message.in_port)
     port = @fdb.lookup_port(message.macda)
+
+    flavor_tc_packet(message)
+
     unless port
-      puts "flooding port #{port}"
+      puts "flooding: #{message.macsa} => #{message.macda}"
+      puts "tc_packet" if message.tc_packet?
       flood(message)
       return
     end
-
-    flavor_tc_packet(message)
 
     unless message.tc_packet?
       add_noise_flow_and_send_packet(message, port)
       return
     end
 
+    message.dump
+    pp @clients.map(&:ip)
+
     if message.tc_openstate?
       puts "open!!"
-      if @clients.include?(client)
-        add_client_flow_and_send_packet(message, port, @clients)
-        client = Node.new(message.macsa, message.ipv4_saddr)
+      client = Node.new(message.macsa, message.ipv4_saddr)
+      if @clients.empty? or not @clients.include?(client)
         @clients << client
       end
+      add_client_flow_and_send_packet(message, port, @clients)
     elsif message.tc_closestate?
-      puts "close"
-      @clients.keep_if {|c| c.ip.to_s != message.ipv4_saddr }
+      puts "close!"
+      @clients.delete_if {|c| c.ip.to_s == message.ipv4_saddr }
       modify_client_flow(message, port, @clients)
     else
-      return_error_packet()
+      puts "body!"
+      # TODO
+      # return_error_packet
     end
   end
 
@@ -58,21 +65,20 @@ class TCController < Controller
     )
   end
 
-  def add_flow_and_send_packet(message, options)
-    send_flow_mod_add(message.datapath_id,
-                      {
-      :buffer_id     => message.buffer_id,
-      :send_flow_rem => false,
-      :check_overlap => true,
-    }.merge!(options)
-                     )
+  def add_flow_and_send_packet(dpid, buffer_id, options)
+    send_flow_mod_add(dpid,
+      {
+        :buffer_id     => buffer_id,
+        :send_flow_rem => false,
+      }.merge!(options)
+    )
   end
 
   def add_client_flow_and_send_packet(message, port, clients)
     clients.empty? and return
-    add_flow(message,
-      :hard_timeout => 30,
-      :match        => Match.new(:nw_src => message.ipv4_saddr, :tp_dst_port => message.udp_dst_port),
+    add_flow_and_send_packet(message.datapath_id, message.buffer_id,
+      :hard_timeout => 60,
+      :match        => Match.new(:nw_src => message.ipv4_saddr, :tp_dst => message.udp_dst_port),
       :actions      => actions_for_copy(clients)
     )
   end
@@ -83,20 +89,19 @@ class TCController < Controller
       :hard_timeout  => 30,
       :buffer_id     => message.buffer_id,
       :send_flow_rem => false,
-      :check_overlap => true,
-      :match         => Match.new(:nw_src => message.ipv4_saddr, :tp_dst_port => message.udp_dst_port),
+      :match         => Match.new(:nw_src => message.ipv4_saddr, :tp_dst => message.udp_dst_port),
       :actions       => actions_for_copy(clients)
     )
   end
 
   def add_noise_flow_and_send_packet(message, port)
-    add_flow_and_send_packet(message,
+    add_flow_and_send_packet(message.datapath_id, message.buffer_id,
       :match     => Match.new(
           :dl_src => message.macsa,      :dl_dst => message.macda,
-          :nw_src => message.ipv4_saddr, :nw_dst => message.ipv4_daddr
+          :dl_type => message.eth_type
       ),
       :actions   => SendOutPort.new(port),
-      :priority  => 0xeeee
+      :priority  => 0x1111
     )
   end
 
