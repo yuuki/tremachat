@@ -30,19 +30,19 @@ class TCController < Controller
     end
 
     unless message.tc_packet?
-      add_noise_flow_and_send_packet(message, port)
+      # add_noise_flow_and_send_packet(message, port)
+      send_out_by_port(message.datapath_id, message, port)
       return
     end
 
     message.dump
-    pp @clients.map(&:ip)
+    @clients.each{|c| puts c.ip}
 
     if message.tc_openstate?
       puts "open!!"
       client = Node.new(message.macsa, message.ipv4_saddr)
-      if @clients.empty? or not @clients.include?(client)
-        @clients << client
-      end
+      @clients << client
+      @clients.uniq!
       add_client_flow_and_send_packet(message, port, @clients)
     elsif message.tc_closestate?
       puts "close!"
@@ -78,18 +78,24 @@ class TCController < Controller
     clients.empty? and return
     add_flow_and_send_packet(message.datapath_id, message.buffer_id,
       :hard_timeout => 60,
-      :match        => Match.new(:nw_src => message.ipv4_saddr, :tp_dst => message.udp_dst_port),
+      :match        => Match.new(
+        :nw_src => message.ipv4_saddr, :nw_dst => message.ipv4_daddr,
+        :tp_dst => message.udp_dst_port
+      ),
       :actions      => actions_for_copy(clients)
     )
   end
 
   def modify_client_flow(message, port, clients)
     clients.empty? and return
-    send_flow_mod_modify(message,
+    send_flow_mod_modify(message.datapath_id,
       :hard_timeout  => 30,
       :buffer_id     => message.buffer_id,
       :send_flow_rem => false,
-      :match         => Match.new(:nw_src => message.ipv4_saddr, :tp_dst => message.udp_dst_port),
+      :match         => Match.new(
+        :nw_src => message.ipv4_saddr, :nw_dst => message.ipv4_daddr,
+        :tp_dst => message.udp_dst_port
+      ),
       :actions       => actions_for_copy(clients)
     )
   end

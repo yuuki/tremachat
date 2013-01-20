@@ -11,6 +11,7 @@ module Tremachat
     TC_PROTOCOL = 134
     TC_PORT = 20000
     TC_ADDR = "192.168.200.200"
+    TC_CLOSE_ADDR = "192.168.200.199"
     BUFSIZE = 10000
 
     def initialize
@@ -31,10 +32,10 @@ module Tremachat
       @ssock.send(buff, 0, daddr || TC_ADDR, TC_PORT || dport)
     end
 
-    def send_with_open(message=nil)
+    def send_with_open(message="")
       h = TCHeader.new
       h[:STATE] = :OPEN
-      send(h.to_s)
+      send(h.to_s + message)
     end
 
     def send_with_body(message)
@@ -43,13 +44,14 @@ module Tremachat
       send(h.to_s + message)
     end
 
-    def send_with_close(message=nil)
+    def send_with_close(message="")
       h = TCHeader.new
       h[:STATE] = :CLOSE
-      send(h.to_s)
+      send(h.to_s + message, TC_CLOSE_ADDR)
     end
 
     def close
+      send_with_close
       @ssock.close
       @rsock.close
     end

@@ -11,9 +11,13 @@ module Tremachat
           client.send_with_open
           client.bind
           Render.puts "Now Wating..."
-          while true
-            message, username = client.recv
-            Render.puts message
+          begin
+            while true
+              message, username = client.recv
+              Render.puts message
+            end
+          rescue Interrupt
+            client.close
           end
           exit 0
         end
