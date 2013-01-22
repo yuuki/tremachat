@@ -36,23 +36,23 @@ class TCController < Controller
     end
 
     message.dump
-    @clients.each{|c| puts c.ip}
 
     if message.tc_openstate?
       puts "open!!"
-      client = Node.new(message.macsa, message.ipv4_saddr)
-      @clients << client
-      @clients.uniq!
-      add_client_flow_and_send_packet(message, port, @clients)
+      @clients << Node.new(message.macsa, message.ipv4_saddr)
+      @clients.uniq!(&:ip)
+      modify_client_flow(message, port, @clients)
     elsif message.tc_closestate?
       puts "close!"
-      @clients.delete_if {|c| c.ip.to_s == message.ipv4_saddr }
+      @clients.delete_if {|c| c.ip.to_s == message.ipv4_saddr}
       modify_client_flow(message, port, @clients)
     else
       puts "body!"
-      # TODO
-      # return_error_packet
+      @clients << Node.new(message.macsa, message.ipv4_saddr)
+      @clients.uniq!(&:ip)
+      add_client_flow_and_send_packet(message, port, @clients)
     end
+    puts @clients.map(&:ip).join(" ")
   end
 
   private
@@ -77,8 +77,8 @@ class TCController < Controller
   def add_client_flow_and_send_packet(message, port, clients)
     clients.empty? and return
     add_flow_and_send_packet(message.datapath_id, message.buffer_id,
-      :hard_timeout => 60,
       :match        => Match.new(
+        :dl_src => message.macsa,      :dl_dst => message.macda,
         :nw_src => message.ipv4_saddr, :nw_dst => message.ipv4_daddr,
         :tp_dst => message.udp_dst_port
       ),
@@ -88,16 +88,19 @@ class TCController < Controller
 
   def modify_client_flow(message, port, clients)
     clients.empty? and return
-    send_flow_mod_modify(message.datapath_id,
-      :hard_timeout  => 30,
-      :buffer_id     => message.buffer_id,
-      :send_flow_rem => false,
-      :match         => Match.new(
-        :nw_src => message.ipv4_saddr, :nw_dst => message.ipv4_daddr,
-        :tp_dst => message.udp_dst_port
-      ),
-      :actions       => actions_for_copy(clients)
-    )
+    clients.each do |client|
+      puts client.mac
+      send_flow_mod_modify(message.datapath_id,
+        :buffer_id     => message.buffer_id,
+        :send_flow_rem => false,
+        :match         => Match.new(
+          :dl_src => client.mac.to_s, :dl_dst => message.macda,
+          :nw_src => client.ip.to_s,  :nw_dst => message.ipv4_daddr,
+          :tp_dst => message.udp_dst_port
+        ),
+        :actions       => actions_for_copy(clients)
+      )
+    end
   end
 
   def add_noise_flow_and_send_packet(message, port)

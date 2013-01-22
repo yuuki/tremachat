@@ -19,13 +19,18 @@ module Tremachat
       @rsock = UDPSocket.new
     end
 
+    def select
+      ret = IO::select([@rsock, $stdin])
+      ret.first
+    end
+
     def bind
       @rsock.bind("0.0.0.0", TC_PORT)
     end
 
     def recv
-      buff, inetaddr = @rsock.recvfrom(BUFSIZE)
-      return buff
+      buff, inetaddr = @rsock.recvfrom_nonblock(BUFSIZE)
+      buff
     end
 
     def send(buff, daddr=nil, dport=nil)

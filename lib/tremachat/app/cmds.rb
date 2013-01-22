@@ -13,8 +13,17 @@ module Tremachat
           Render.puts "Now Wating..."
           begin
             while true
-              message, username = client.recv
-              Render.puts message
+              fd_list = client.select
+              fd_list.each do |sock|
+                if sock == $stdin
+                  line = $stdin.gets
+                  Render.puts_cmd line
+                  client.send_with_body(line)
+                else
+                  message, username = client.recv
+                  Render.puts message
+                end
+              end
             end
           rescue Interrupt
             client.close

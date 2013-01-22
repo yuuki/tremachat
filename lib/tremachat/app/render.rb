@@ -14,6 +14,10 @@ module Tremachat
         STDOUT.puts s unless silent
       end
 
+      def self.puts_cmd(s)
+        self.puts("> " + s)
+      end
+
       def self.color_code(str)
         colors = Sickill::Rainbow::TERM_COLORS.keys - [:default, :black, :white]
         n = str.each_byte.map{|c| c.to_i}.inject{|a,b|a+b}

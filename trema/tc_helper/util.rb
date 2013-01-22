@@ -35,23 +35,21 @@ module TCHelper
       end
 
       def dump
-        puts "macsa: #{self.macsa}"
-        puts "macda:  #{self.macda}"
+        puts "-------------------------------------"
         puts "in_port: #{self.in_port}"
         puts "arp" if self.arp?
         puts "icmpv4" if self.icmpv4?
         if self.ipv4?
-          puts "ipv4"
           puts "ipv4_saddr: #{self.ipv4_saddr}"
           puts "ipv4_daddr: #{self.ipv4_daddr}"
         end
         if self.udp?
-          puts "udp"
           puts "udp_src_port: #{self.udp_src_port}"
           puts "udp_dst_port: #{self.udp_dst_port}"
           puts "udp_payload: #{self.udp_payload}"
         end
         puts "tcp" if self.tcp?
+        puts "-------------------------------------"
       end
 
       private
