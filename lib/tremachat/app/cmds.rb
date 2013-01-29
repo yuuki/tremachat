@@ -8,10 +8,25 @@ module Tremachat
       private
       def regist_cmds
         cmd :timeline do |v, opts|
+          client.send_with_open
+          client.bind
           Render.puts "Now Wating..."
-          while true
-            message = client.recv
-            Render.puts message
+          begin
+            while true
+              fd_list = client.select
+              fd_list.each do |sock|
+                if sock == $stdin
+                  line = $stdin.gets
+                  Render.puts_cmd line
+                  client.send_with_body(line)
+                else
+                  message, username = client.recv
+                  Render.puts message
+                end
+              end
+            end
+          rescue Interrupt
+            client.close
           end
           exit 0
         end

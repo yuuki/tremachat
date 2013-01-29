@@ -17,13 +17,14 @@ module Tremachat
     def run(argv)
       @parser = ArgsParser.parse argv, :style => :equal do
         arg :timeline, 'show timeline', :alias => :tl
-        arg :list, 'show room list', :client => :l
+        arg :list, 'show room list', :alias => :l
+        arg :dport, 'specify destination port', :alias => :dp
         arg :version, 'show version', :alias => :v
         arg :help, 'show help', :alias => :h
       end
 
       if @parser.has_option? :help
-        STDERR.puts "TremaChat - Trema Chat client on Ruby v#{Tremachat::VERSION}"
+        STDERR.puts "TremaChat - Trema Chat client in Ruby v#{Tremachat::VERSION}"
         STDERR.puts
         STDERR.puts @parser.help
         STDERR.puts
@@ -46,11 +47,14 @@ module Tremachat
         message = @parser.argv.join(' ')
         Render.puts(message)
         begin
-          client.send message
+          client.send_with_open
+          client.send_with_body message
         rescue => e
           STDERR.puts e.message
         end
       end
+
+      client.close
     end
   end
 end
